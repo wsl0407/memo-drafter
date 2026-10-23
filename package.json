@@ -1,0 +1,6 @@
+{
+  "name": "memo-drafter",
+  "private": true,
+  "description": "工務備忘錄擬稿工具的建置相依套件",
+  "devDependencies": { "jszip": "3.10.1" }
+}
