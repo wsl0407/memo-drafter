@@ -373,6 +373,35 @@ var MemoCore = (function () {
                  title: name + sx + '送審' };
       }
     },
+    extend: {
+      name: 'G. 展延申請',
+      code: CODE_MAIN,
+      fields: [
+        { id: 'kindE', label: '申請別', kind: 'seg', options: ['申請', '二次申請', '三次申請', '補充申請'], def: '申請' },
+        { id: 'item', label: '展延項目', kind: 'text', def: '', ph: '例：防水工程材料暨廠商資格及施工計畫' },
+        { id: 'verE', label: '版次（可不註明）', kind: 'select', options: ['不註明', '第一版', '修正一版', '審定版'], def: '不註明' },
+        { id: 'oldDue', label: '原提送期限', kind: 'rocdate' },
+        { id: 'newDue', label: '擬展延至', kind: 'rocdate', def: 'plus30' },
+        { id: 'hasRef', label: '說明第一項加註「依據來文辦理」', kind: 'check', def: true },
+        { id: 'rUnit', label: '來文單位', kind: 'select', options: ['貴所', '劉培森建築師事務所', '貴分署'], def: '貴所', show: 'reply' },
+        { id: 'rDate', label: '來文日期', kind: 'rocdate', show: 'reply' },
+        { id: 'rNo', label: '來文字號', kind: 'text', def: '', ph: '例：森(工)字第1150903001號', show: 'reply' },
+        { id: 'rKind', label: '來文文別', kind: 'text', def: '工地備忘錄', show: 'reply' },
+        { id: 'reason', label: '展延事由（一行一項，會依序列在說明中）', kind: 'area', def: '', ph: '例：依據前揭備忘錄之審查意見，本案需辦理規範疑義釋疑作業，並請協力廠商整備符合規範之試驗報告。' }
+      ],
+      showIf: function (p, key) { return key === 'reply' ? !!p.hasRef : true; },
+      build: function (p) {
+        var item = (p.item || '○○') + (p.verE && p.verE !== '不註明' ? '(' + p.verE + ')' : '');
+        var subject = p.kindE + '「' + PROJECT + '」(工程編號：' + p.code + ') 之' + item + '展延提送，請 鑒核。';
+        var items = [];
+        if (p.hasRef) items.push('依據 ' + p.rUnit + (p.rDate ? rocDate(p.rDate) : '') + (p.rNo || '○○字第○○號') + (p.rKind || '') + '辦理。');
+        var rs = String(p.reason || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+        items = items.concat(rs.length ? rs : ['○○（請填寫展延事由）。']);
+        var verb = p.kindE === '申請' ? '擬申請展延至' : p.kindE === '補充申請' ? '擬補充申請一併展延至' : '擬再次申請展延至';
+        items.push('本案原定提送期限為' + rocDate(p.oldDue) + '，' + verb + rocDate(p.newDue) + '提送，懇請 惠予同意辦理。');
+        return { subject: subject, items: items, title: item + '展延申請' };
+      }
+    },
     custom: {
       name: '其他（自由填寫）',
       code: CODE_MAIN,
@@ -439,7 +468,7 @@ var PROTOS = [{"l0": "<w:p><w:pPr><w:pStyle w:val=\"a8\"/><w:widowControl w:val=
 <script>
 (function(){
   var C = MemoCore, $ = function(id){ return document.getElementById(id); };
-  var KNOWN = ['陳昱勳','歐冠廷','林暐勝','郭登慶','范嘉文','蘇冠銘','林世宇','周芷璿'];
+  var KNOWN = ['陳昱勳','歐冠廷','林暐勝','郭登慶','范嘉文','蘇冠銘','林世宇','周芷璿','黃彥榤'];
   var store = { get:function(k,d){ try{ var v=localStorage.getItem('memo.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
                 set:function(k,v){ try{ localStorage.setItem('memo.'+k, JSON.stringify(v)); }catch(e){} } };
 
@@ -612,6 +641,7 @@ var PROTOS = [{"l0": "<w:p><w:pPr><w:pStyle w:val=\"a8\"/><w:widowControl w:val=
 
   function defaultFor(f, raw){
     if (f.def==='lastTuesday' || (f.kind==='rocdate' && f.id==='rdate')) return lastTuesday();
+    if (f.def==='plus30'){ var d30=new Date(today); d30.setDate(d30.getDate()+30); return iso(d30); }
     if (f.kind==='rocdate') return iso(today);
     if (f.kind==='rocmonth') return prevMonth();
     if (f.def==='byVer') return (T[state.type].copiesFor||C.copiesFor)(raw && raw.ver);
@@ -627,7 +657,7 @@ var PROTOS = [{"l0": "<w:p><w:pPr><w:pStyle w:val=\"a8\"/><w:widowControl w:val=
     var fs=T[state.type].fields, replyShown=false;
     $('paramsSet').hidden=!fs.length;
     fs.forEach(function(f){
-      if(f.show==='reply' && !replyShown){ replyShown=true; var h=el('div','sub','回覆來文（說明第一項「復 …辦理。」）'); h.dataset.show='reply'; box.appendChild(h); }
+      if(f.show==='reply' && !replyShown){ replyShown=true; var h=el('div','sub','來文資料（說明第一項會引用）'); h.dataset.show='reply'; box.appendChild(h); }
       var lab=document.createElement('label'), inp;
       if(f.kind==='seg'){
         var wrap=el('div','segWrap wide'), cur=state.params[f.id]!==undefined?state.params[f.id]:f.def;
@@ -645,13 +675,14 @@ var PROTOS = [{"l0": "<w:p><w:pPr><w:pStyle w:val=\"a8\"/><w:widowControl w:val=
         wrap.appendChild(grp); wrap.appendChild(hid); box.appendChild(wrap); return;
       }
       if(f.kind==='select'){ inp=document.createElement('select'); optionsFor(f).forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; inp.appendChild(o); }); }
+      else if(f.kind==='area'){ inp=document.createElement('textarea'); inp.rows=4; lab.classList.add('wide'); }
       else inp=document.createElement('input');
       inp.id='p_'+f.id; if(f.ph) inp.placeholder=f.ph;
       if(f.kind==='rocdate') inp.type='date';
       else if(f.kind==='rocmonth') inp.type='month';
       else if(f.kind==='number'){ inp.type='number'; inp.min=1; inp.max=99; }
       else if(f.kind==='check'){ inp.type='checkbox'; lab.className='chk wide'; }
-      if(['no','topic','mat','vendor','plan','ref','rNo','dwg','mdl','scope','upload'].indexOf(f.id)>=0) lab.classList.add('wide');
+      if(['item','no','topic','mat','vendor','plan','ref','rNo','dwg','mdl','scope','upload'].indexOf(f.id)>=0) lab.classList.add('wide');
       if(f.show) lab.dataset.show=f.show;
       var v=state.params[f.id]; if(v===undefined) v=defaultFor(f, state.params);
       if(f.kind==='check') inp.checked=!!v; else inp.value=v;
