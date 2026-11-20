@@ -353,6 +353,26 @@ var MemoCore = (function () {
                  title: name + sx + '送審' };
       }
     },
+    rfi: {
+      name: 'G. 資料諮詢及圖說規範疑義釋疑單',
+      code: CODE_MAIN,
+      fields: [
+        { id: 'no', label: '釋疑單編號（豐(建)釋第＿＿號）', kind: 'text', def: '', ph: '例：0023' },
+        { id: 'count', label: '釋疑項數', kind: 'number', def: 1 },
+        { id: 'topic', label: '釋疑主題（可留空）', kind: 'text', def: '', ph: '例：防水工程止水帶及止水條' },
+        { id: 'pages', label: '附件頁數（可留空）', kind: 'text', def: '', ph: '例：11' }
+      ],
+      build: function (p) {
+        var no = String(p.no || '').trim(), cnt = zhNum(p.count) || '一';
+        var pg = parseInt(p.pages, 10), pages = pg > 0 ? '(共' + zhNum(pg) + '頁)' : '';
+        var rfi = 'RFI-' + (no ? ('000' + no.replace(/\D/g, '')).slice(-3) : '○○○');
+        var item = '旨揭資料諮詢及圖說規範疑義釋疑單共計' + cnt + '項';
+        if (p.topic) item += '，' + rfi + p.topic + '疑義澄清' + (pages ? '釋疑附件' + pages : '') + '一份。';
+        else item += pages ? '及附件一份' + pages + '。' : '。';
+        var title = '資料諮詢及圖說規範疑義釋疑單-豐(建)釋第' + (no || '○○○○') + '號';
+        return { subject: head(p.code) + '之' + title + '(含釋疑附件)資料一份，請查照。', items: [item], title: title };
+      }
+    },
     custom: {
       name: '其他（自由填寫）',
       code: CODE_MAIN,
@@ -419,7 +439,7 @@ var PROTOS = [{"l0": "<w:p><w:pPr><w:pStyle w:val=\"a8\"/><w:widowControl w:val=
 <script>
 (function(){
   var C = MemoCore, $ = function(id){ return document.getElementById(id); };
-  var KNOWN = ['陳昱勳','歐冠廷','林暐勝','郭登慶','范嘉文','蘇冠銘','林世宇'];
+  var KNOWN = ['陳昱勳','歐冠廷','林暐勝','郭登慶','范嘉文','蘇冠銘','林世宇','周芷璿'];
   var store = { get:function(k,d){ try{ var v=localStorage.getItem('memo.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
                 set:function(k,v){ try{ localStorage.setItem('memo.'+k, JSON.stringify(v)); }catch(e){} } };
 
@@ -631,7 +651,7 @@ var PROTOS = [{"l0": "<w:p><w:pPr><w:pStyle w:val=\"a8\"/><w:widowControl w:val=
       else if(f.kind==='rocmonth') inp.type='month';
       else if(f.kind==='number'){ inp.type='number'; inp.min=1; inp.max=99; }
       else if(f.kind==='check'){ inp.type='checkbox'; lab.className='chk wide'; }
-      if(['mat','vendor','plan','ref','rNo','dwg','mdl','scope','upload'].indexOf(f.id)>=0) lab.classList.add('wide');
+      if(['no','topic','mat','vendor','plan','ref','rNo','dwg','mdl','scope','upload'].indexOf(f.id)>=0) lab.classList.add('wide');
       if(f.show) lab.dataset.show=f.show;
       var v=state.params[f.id]; if(v===undefined) v=defaultFor(f, state.params);
       if(f.kind==='check') inp.checked=!!v; else inp.value=v;
