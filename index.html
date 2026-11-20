@@ -347,6 +347,26 @@ var MemoCore = (function () {
                  items: [first, '檢送' + S + '一式' + zhNum(p.copies) + '份。'], title: S };
       }
     },
+    rfi: {
+      name: 'E. 資料諮詢及圖說規範疑義釋疑單',
+      code: CODE_MAIN,
+      fields: [
+        { id: 'no', label: '釋疑單編號（豐(建)釋第＿＿號）', kind: 'text', def: '', ph: '例：0023' },
+        { id: 'count', label: '釋疑項數', kind: 'number', def: 1 },
+        { id: 'topic', label: '釋疑主題（可留空）', kind: 'text', def: '', ph: '例：防水工程止水帶及止水條' },
+        { id: 'pages', label: '附件頁數（可留空）', kind: 'text', def: '', ph: '例：11' }
+      ],
+      build: function (p) {
+        var no = String(p.no || '').trim(), cnt = zhNum(p.count) || '一';
+        var pg = parseInt(p.pages, 10), pages = pg > 0 ? '(共' + zhNum(pg) + '頁)' : '';
+        var rfi = 'RFI-' + (no ? ('000' + no.replace(/\D/g, '')).slice(-3) : '○○○');
+        var item = '旨揭資料諮詢及圖說規範疑義釋疑單共計' + cnt + '項';
+        if (p.topic) item += '，' + rfi + p.topic + '疑義澄清' + (pages ? '釋疑附件' + pages : '') + '一份。';
+        else item += pages ? '及附件一份' + pages + '。' : '。';
+        var title = '資料諮詢及圖說規範疑義釋疑單-豐(建)釋第' + (no || '○○○○') + '號';
+        return { subject: head(p.code) + '之' + title + '(含釋疑附件)資料一份，請查照。', items: [item], title: title };
+      }
+    },
     model: {
       name: 'F. 模型送審',
       code: CODE_MAIN,
@@ -368,26 +388,6 @@ var MemoCore = (function () {
         return { subject: head(p.code) + ' 之' + name + sx + '送審，請 鑒核。',
                  items: [first, (p.upload || '○○模型及衝突報告') + '上傳於ACC平台，並提送光碟一式' + zhNum(p.copies) + '份。'],
                  title: name + sx + '送審' };
-      }
-    },
-    rfi: {
-      name: 'G. 資料諮詢及圖說規範疑義釋疑單',
-      code: CODE_MAIN,
-      fields: [
-        { id: 'no', label: '釋疑單編號（豐(建)釋第＿＿號）', kind: 'text', def: '', ph: '例：0023' },
-        { id: 'count', label: '釋疑項數', kind: 'number', def: 1 },
-        { id: 'topic', label: '釋疑主題（可留空）', kind: 'text', def: '', ph: '例：防水工程止水帶及止水條' },
-        { id: 'pages', label: '附件頁數（可留空）', kind: 'text', def: '', ph: '例：11' }
-      ],
-      build: function (p) {
-        var no = String(p.no || '').trim(), cnt = zhNum(p.count) || '一';
-        var pg = parseInt(p.pages, 10), pages = pg > 0 ? '(共' + zhNum(pg) + '頁)' : '';
-        var rfi = 'RFI-' + (no ? ('000' + no.replace(/\D/g, '')).slice(-3) : '○○○');
-        var item = '旨揭資料諮詢及圖說規範疑義釋疑單共計' + cnt + '項';
-        if (p.topic) item += '，' + rfi + p.topic + '疑義澄清' + (pages ? '釋疑附件' + pages : '') + '一份。';
-        else item += pages ? '及附件一份' + pages + '。' : '。';
-        var title = '資料諮詢及圖說規範疑義釋疑單-豐(建)釋第' + (no || '○○○○') + '號';
-        return { subject: head(p.code) + '之' + title + '(含釋疑附件)資料一份，請查照。', items: [item], title: title };
       }
     },
     custom: {
